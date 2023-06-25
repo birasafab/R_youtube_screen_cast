@@ -1,0 +1,53 @@
+---
+title: "R map creation screencast"
+author: "Birasafab"
+date: "2023-06-25"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+# loading all the required packages
+```{r}
+library(tidyverse)
+
+map_data('world') %>% 
+  filter(!region == "Rwanda") %>% 
+  ggplot(aes(x = long,y= lat,group=group))+
+  geom_polygon()+
+  ggthemes::theme_map()
+```
+
+# Map of the East African community countries
+```{r}
+map_data('world') %>% 
+  filter(region %in% c('Rwanda','Burundi','Kenya','Tanzania','Uganda','South Sudan','Democratic Republic of the Congo')) %>% 
+  ggplot(aes(x = long,y= lat,group=group,fill = region))+
+  geom_polygon()+
+  ggthemes::theme_map()+
+  theme(legend.position = 'top')+
+  labs(title = "East African community map",
+       subtitle = 'this is the map of the east africa containing all the countries currently members of the EAC including DR CONGO')
+  
+```
+
+# creating continent map
+```{r}
+library(countrycode)
+
+# creating country codes
+continent_data = map_data('world') %>% 
+  mutate(count_code = countrycode(region,origin = 'country.name',destination = 'iso3c')) %>% 
+  left_join(codelist %>% select(continent, iso3c), by = c('count_code'='iso3c'))
+```
+
+# creating the continent specific map
+```{r}
+continent_data %>%
+  filter(continent == 'Africa') %>% 
+  ggplot(aes(long,lat,group=group, fill = region))+
+  geom_polygon()+
+  ggthemes::theme_map()+
+  theme(legend.position = 'None')
+```
+
