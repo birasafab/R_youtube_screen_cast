@@ -38,16 +38,18 @@ library(countrycode)
 # creating country codes
 continent_data = map_data('world') %>% 
   mutate(count_code = countrycode(region,origin = 'country.name',destination = 'iso3c')) %>% 
-  left_join(codelist %>% select(continent, iso3c), by = c('count_code'='iso3c'))
+  left_join(codelist %>% select(continent, iso3c), by = c('count_code'='iso3c'))%>%
+  # removing all the countries/areas without iso3_code
+  filter(!is.na(count_code))
 ```
 
 # creating the continent specific map
 ```{r}
 continent_data %>%
-  filter(continent == 'Africa') %>% 
+  filter(continent == 'Africa' & !is.na(count_code)) %>% 
   ggplot(aes(long,lat,group=group, fill = region))+
-  geom_polygon()+
   ggthemes::theme_map()+
+  geom_polygon()+
   theme(legend.position = 'None')
 ```
 
