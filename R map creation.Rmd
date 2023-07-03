@@ -53,3 +53,23 @@ continent_data %>%
   theme(legend.position = 'None')
 ```
 
+
+
+# creating the continent specific map - --- World population prospects
+```{r}
+final_data %>%
+  filter(continent == 'Africa' & !is.na(count_code)) %>% 
+  ggplot(aes(long,lat,group=group, fill = total_pop_000))+
+  ggthemes::theme_map()+
+  geom_polygon()+
+  labs(
+    title = 'Population size in Africa as of 2020',
+    fill = 'Population size'
+  )+
+  theme(panel.background = element_rect(fill='#add8e6'),
+                                        plot.background = element_rect(fill='#eab676'),
+        legend.background = element_blank())+
+ # guides(fill = guide_legend(labels = comma))+
+scale_fill_gradient(high="red", low="white", space = 'Lab')
+  scale_fill_continuous(labels =paste0(c('0','50','100','150','200'),',000,000'))
+```
