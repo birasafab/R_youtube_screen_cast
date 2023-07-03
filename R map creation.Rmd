@@ -12,7 +12,6 @@ editor_options:
 library(tidyverse)
 
 map_data('world') %>% 
-  filter(!region == "Rwanda") %>% 
   ggplot(aes(x = long,y= lat,group=group))+
   geom_polygon()+
   ggthemes::theme_map()
@@ -43,6 +42,14 @@ continent_data = map_data('world') %>%
   filter(!is.na(count_code))
 ```
 
+# reading the UN population prospects as of 2020
+```{r}
+library(readxl)
+
+read_excel("WPP2022_GEN_F01_DEMOGRAPHIC_INDICATORS_REV1.xlsx", skip = 16)
+```
+
+
 # creating the continent specific map
 ```{r}
 continent_data %>%
@@ -70,6 +77,7 @@ final_data %>%
                                         plot.background = element_rect(fill='#eab676'),
         legend.background = element_blank())+
  # guides(fill = guide_legend(labels = comma))+
-scale_fill_gradient(high="red", low="white", space = 'Lab')
+scale_fill_gradient2(high = 'red',low = 'blue',midpoint = 100000)+
+  scale_colour_continuous(formatter = comma) 
   scale_fill_continuous(labels =paste0(c('0','50','100','150','200'),',000,000'))
 ```
