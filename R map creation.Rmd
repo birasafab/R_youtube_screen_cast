@@ -13,7 +13,7 @@ library(tidyverse)
 
 map_data('world') %>% 
   ggplot(aes(x = long,y= lat,group=group))+
-  geom_polygon()+
+  geom_polygon(fill= 'green')+
   ggthemes::theme_map()
 ```
 
@@ -32,11 +32,13 @@ map_data('world') %>%
 
 # creating continent map
 ```{r}
+# loading the countrycode package
 library(countrycode)
 
 # creating country codes
 continent_data = map_data('world') %>% 
   mutate(count_code = countrycode(region,origin = 'country.name',destination = 'iso3c')) %>% 
+  # combining the above map_data with codelist data (continent and iso3c)
   left_join(codelist %>% select(continent, iso3c), by = c('count_code'='iso3c'))%>%
   # removing all the countries/areas without iso3_code
   filter(!is.na(count_code))
@@ -44,9 +46,23 @@ continent_data = map_data('world') %>%
 
 # reading the UN population prospects as of 2020
 ```{r}
+# loading a package to read excel files
 library(readxl)
 
-read_excel("WPP2022_GEN_F01_DEMOGRAPHIC_INDICATORS_REV1.xlsx", skip = 16)
+countries_data = 
+  read_excel("WPP2022_GEN_F01_DEMOGRAPHIC_INDICATORS_REV1.xlsx",sheet = "Estimates",skip = 16, col_types = 'text') %>% 
+  janitor::clean_names() %>% 
+  select(region = "region_subregion_country_or_area", year, total = "total_population_as_of_1_january_thousands", iso3c = "iso3_alpha_code") %>% 
+  mutate(region = str_to_lower(region)) %>% 
+  filter(region != 'world' & !is.na(year) & year == 2020)
+
+
+# merging continents map geolocation data with world population prospects data
+
+final_data = continent_data %>% 
+  left_join(countries_data, by = c("count_code" = "iso3c")) %>% 
+  mutate(total = as.numeric(total))
+  
 ```
 
 
@@ -60,6 +76,24 @@ continent_data %>%
   theme(legend.position = 'None')
 ```
 
+# African population data map
+```{r}
+final_data %>% 
+  filter(continent == 'Africa') %>% 
+  ggplot(aes(long,lat, group = group, fill = total))+
+  geom_polygon()+
+  ggthemes::theme_map()+
+  labs(title = 'African population prospects as of 2020',
+       fill = 'Population size',
+       subtitle = 'Only Nigeria has above 200 million population \nFollowed with Ethiopia having almost 115',
+       caption = "Plot by Birasafab | #30daysChartChallenge")+
+  theme(panel.background = element_rect('#add8e6'),
+        plot.background = element_rect('#eab676'),
+        legend.background = element_blank())+
+  scale_fill_gradient(high = "#f3ec27",low = "#300790")
+
+ggsave(filename = 'African population size map 2020.png', device = 'png')
+```
 
 
 # creating the continent specific map - --- World population prospects
