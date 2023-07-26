@@ -1,0 +1,83 @@
+---
+title: "Creating maps with simple features"
+author: "Birasafab"
+date: "2023-07-26"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+# Loading the required packages
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+
+library(tidyverse) #Eco-system of packages for data manipulation
+library(readxl)    # package to read excel files
+library(sf)     # package to read simple features
+```
+
+# reading the summary data from the recent Rwandan Population Housing Census
+```{r}
+data_census = read_excel("C:/Users/fabrice.birasa/Documents/My files/Learning/R learning/R_youtube_screen_cast/data used/PHC5-2022_Main_Indicators_Report_Tables_Final (2).xlsx", sheet = "Table 68",range = "B3:k39") %>% janitor::clean_names() %>% 
+  select(1:2) %>% 
+  mutate(district = str_to_lower(district)) %>% 
+  filter(!district %in% c('rwanda','city of kigali','southern province','western province','northern province','eastern province'))
+```
+
+#Reading the simple features' data using `sf` package
+
+```{r}
+rwanda_sh = st_read(paste0(getwd(),'/data used/shapefiles/gadm41_RWA_shp/gadm41_RWA_2.shp'))
+
+# creating the initial/rough map
+
+rwanda_sh %>% ggplot() + geom_sf()+
+  ggthemes::theme_map()
+
+merged_data = rwanda_sh %>% 
+  mutate(NAME_2 = str_to_lower(NAME_2)) %>% 
+  left_join(data_census, by = c('NAME_2' = 'district'))
+```
+
+# re-mapping the level of HHs access to improved water
+```{r}
+merged_data %>% 
+  ggplot()+
+  geom_sf(aes(fill = total_2))+
+  labs(fill = 'level of access \nto impronved water')+
+  ggthemes::theme_map()+
+  theme(legend.position = 'top')
+
+```
+
+# Creating a tmap using the above data
+```{r}
+library(tmap)
+
+
+
+merged_data %>% 
+  tm_shape()+
+  tm_polygons("total_2", 
+              palette = c("yellow","#ffffbe","#feaf62","#abdea3","#347fc1"), 
+              breaks = c(50,60,70,80,90,100),
+              title = "Private HHs access to the Improved water(%)",
+              legend.format = list(text.separator = "-"))+
+  tm_text("NAME_2", 
+          col = "black",
+#          auto.placement = TRUE,
+          size = .4)+
+  tm_layout(
+    main.title = "Private HHs access to the Improved water(%)",
+    legend.position = c("left", "top"))+
+  tm_scale_bar(breaks = c(0,25,50), text.size = .8, position = c("right","bottom"))+
+  tm_logo("rwanda.png", height = 2.1, position = c('center','top'))+
+  tm_credits(text = "Source: WASH MIS 2023", size = 0.9, fontface = "bold")+
+  tm_compass(type = "4star",size = 1,
+             position = c("right","top"), 
+             cardinal.directions = c('North'),
+             bg.color = 'red',
+             bg.alpha = .13)
+```
+
