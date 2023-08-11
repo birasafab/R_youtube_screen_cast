@@ -1,0 +1,42 @@
+---
+title: "data cleaning both excel and R"
+author: "Birasafab"
+date: "2023-08-03"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# loading the required packages
+library(tidyverse)
+library(readxl)
+```
+
+# reading the dataset of interest
+```{r}
+raw = read_excel("raw data.xlsx",
+                 col_names = FALSE, 
+                 sheet = "raw data", 
+                 range = "R2C1:R244604C1")
+```
+
+
+```{r}
+# Separate the data column into multiple columns based on a comma separator
+new_data = raw %>% separate_wider_delim(`...1`, ",", names = c("Date", "Average Price", "Commodity", "Market", "District", 'Province')) %>% 
+filter(Date != 'Date') %>% 
+  # cleaning column 
+  janitor::clean_names() %>% 
+# Date column into Date format
+  mutate(date = format(openxlsx::convertToDate(date),"%m/%d/%Y"),
+         average_price = as.numeric(average_price))
+```
+
+# reproducing excel chart
+```{r}
+new_data %>% group_by(province) %>% filter(date == '12/31/2019') %>%  count() %>% arrange(n) %>% ggplot(aes(x = reorder(province,n),n))+geom_col(fill = '#5b9bd5',width = .5)+labs(y = '',x = '')+coord_cartesian(ylim = c(0,250))+theme(panel.grid.minor = element_blank())+theme_light()+geom_text(aes(label = n), vjust=-1)+ggtitle('Number of transactions per Province')+theme(plot.title = element_text(hjust = .5), panel.border = element_blank(), panel.grid.major.x = element_line(color = 'white'), axis.ticks = element_blank())
+```
+
